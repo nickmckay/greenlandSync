@@ -89,9 +89,12 @@ plot(cp)
 cps <- cp@cpts
 if(length(cps)==3){#found two changepoints.
   cpts <- cps[1:2]
-}else if(length(cps)==4){
+}else if(length(cps)>=4){
   cpts <- cps[2:3]
+}else if(length(cps)==2){
+  cpts <- c(cps[1],cps[1])
 }
+
 
 #average rows
 cp1 <- colMeans(ae[c(cpts[1],cpts[1]+1),])
@@ -104,18 +107,28 @@ cp2.med = median(cp2)
 tsPlot <- plotTimeseriesEnsRibbons(ae,y,colorLow = "LightGray",colorHigh = "DarkGray") +
   scale_x_reverse(name = "Age (yr BP)",limits = time.range[order(-time.range)] ) + 
   ylab(paste0(sTS[[i]]$paleoData_variableName," (",sTS[[i]]$paleoData_units,")")) +
-  geom_vline(aes(xintercept = cp2.med),color = "red")+
-  geom_vline(aes(xintercept = cp1.med),color = "blue")+
+  geom_vline(aes(xintercept = cp1.med),color = "red")+
   ggtitle(sTS[[i]]$dataSetName)
 
-cpHist <- ggplot()+geom_density(aes(x = cp2, fill = "Onset"), alpha = 0.5, colour = NA) +
+if(cp1.med!=cp2.med){#if they're not the same
+  tsPlot <-  tsPlot+geom_vline(aes(xintercept = cp2.med),color = "blue")
+  }
+
+
+
+cpHist <- ggplot()+
   geom_density(aes(x = cp1, fill = "Termination"), alpha = 0.5, colour = NA) +
   scale_x_reverse(name = "Age (yr BP)",limits = time.range[order(-time.range)] )+
   theme_bw()+scale_fill_brewer("Changepoint",palette = "Set1")+
-  ylab("Probability Density")+
-  theme(legend.position = c(0.1, 0.7))+
-geom_vline(aes(xintercept = cp2.med),color = "red")+
-  geom_vline(aes(xintercept = cp1.med),color = "blue")
+  ylab("Probability Density")
+
+
+if(cp1.med!=cp2.med){#if they're not the same
+  cpHist <-  cpHist+geom_density(aes(x = cp2, fill = "Onset"), alpha = 0.5, colour = NA) +
+    geom_vline(aes(xintercept = cp2.med),color = "blue")
+}
+cpHist <-  cpHist+  theme(legend.position = c(0.1, 0.7))+
+  geom_vline(aes(xintercept = cp1.med),color = "red")
 
 p1 <- ggplot_gtable(ggplot_build(tsPlot))
 p2 <- ggplot_gtable(ggplot_build(cpHist))
@@ -125,7 +138,7 @@ p1$widths[2:3] <- maxWidth
 p2$widths[2:3] <- maxWidth
 finalFig <- grid.arrange(p1, p2, heights = c(3, 2))
 
-ggsave(finalFig,filename = here("figures",paste0(dsn[i],"-Timeseries&changepoints.pdf")))
+ggsave(finalFig,filename = here("figures",paste0(dsn[i],"-",sTS[[i]]$paleoData_variableName,"-Timeseries&changepoints.pdf")))
 
 }
 
