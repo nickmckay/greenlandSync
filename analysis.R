@@ -42,7 +42,7 @@ varNames = sapply(TS,"[[","paleoData_variableName")
 sapply(TS,"[[","tableType")
 
 
-vars2Analyze = c("Temp","temp2s","accumulation","d18O","seaIceCover","EpsilonC29-C23","Sun2011MAAT","AccRate","TTL CARB")
+vars2Analyze = c("Temp","temp2s","accumulation","d18O","seaIceCover","EpsilonC29-C23","Sun2011MAAT","C23d2H","C25d2H","C27d2H","C29d2H","AccRate","TTL CARB")
 sTS = TS[varNames %in% vars2Analyze]
 dsn = sapply(sTS,"[[","dataSetName")
 #Data ready to analyze!
@@ -61,16 +61,16 @@ dsn = sapply(sTS,"[[","dataSetName")
 # Also would be nice to compare NEEM accumulation to our epsilon record
 # All three of these ice core records are on (or in the case of Stuiver 1995 should be on) the GICC05 scale. For this age model, maximum counting error for the Early Holocene is 2% (Vinther et al. 2006, JGR)
 
-Q <- c(4,3,3,3,5,3,3,3,3,4,3,3,3)
+Q <- c(8,3,3,3,5,3,3,3,3,4,3,3,3,3,3, 3,3)
                    #meese.          #andersen are problematic. Andersen is too short and Meese is missing the ensemble data. 
 
-pen = c(.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.01,.1,.1)
+pen = c(.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.01,  .1,.1,.1,.1,     .1,.1)
 #cpt testing.
 
 time.range <- c(7000,9500)
+names(D)[8]
 
-
-for(i in c(1:5,7,9:13)){
+for(i in c(1:5,7,9:17)){
 y = sTS[[i]]$paleoData_values
 if(grepl("epsilon",sTS[[i]]$paleoData_variableName,ignore.case = T)){
  y[y < -20] <- NA
@@ -84,56 +84,80 @@ ae <- ae[good,]
 plot(ae[,1],y,main = dsn[i],type="l")
 cp <- cpt.mean(y,method = "SegNeigh",penalty="Manual",pen.value = pen[i],Q=Q[i])
 plot(cp)
-
+i
 #get change point indices..
 cps <- cp@cpts
 if(length(cps)==3){#found two changepoints.
   cpts <- cps[1:2]
-}else if(length(cps)>=4){
+}else if(length(cps)==4){
+  cpts <- cps[1:2]
+}else if(length(cps)==5){
   cpts <- cps[2:3]
 }else if(length(cps)==2){
   cpts <- c(cps[1],cps[1])
+}else if(length(cps)==8){
+  cpts <- cps[2:7]
 }
 
-
+all.cp = matrix(NA,nrow = ncol(ae), ncol = length(cpts) )
+all.cp.med = c()
 #average rows
-cp1 <- colMeans(ae[c(cpts[1],cpts[1]+1),])
-cp2 <- colMeans(ae[c(cpts[2],cpts[2]+1),])
+for(nc in 1:length(cpts)){
+all.cp[,nc] <- colMeans(ae[c(cpts[nc],cpts[nc]+1),])
 
-cp1.med = median(cp1)
-cp2.med = median(cp2)
-
+all.cp.med[nc] = median(all.cp[,nc])
+}
 
 tsPlot <- plotTimeseriesEnsRibbons(ae,y,colorLow = "LightGray",colorHigh = "DarkGray") +
   scale_x_reverse(name = "Age (yr BP)",limits = time.range[order(-time.range)] ) + 
   ylab(paste0(sTS[[i]]$paleoData_variableName," (",sTS[[i]]$paleoData_units,")")) +
-  geom_vline(aes(xintercept = cp1.med),color = "red")+
-  ggtitle(sTS[[i]]$dataSetName)
+ 
+  ggtitle(paste0(dsn[i],"-",sTS[[i]]$paleoData_variableName))
 
-if(cp1.med!=cp2.med){#if they're not the same
-  tsPlot <-  tsPlot+geom_vline(aes(xintercept = cp2.med),color = "blue")
-  }
+#add pairs of lines
+os = seq(1,length(cpts)-1,by=2)
+tm = seq(2,length(cpts),by=2)
+
+      tsPlot <-  tsPlot + geom_vline(aes(xintercept = all.cp.med[os]),color = "blue") + geom_vline(aes(xintercept = all.cp.med[tm]),color = "red")
 
 
 
-cpHist <- ggplot()+
-  geom_density(aes(x = cp1, fill = "Termination"), alpha = 0.5, colour = NA) +
+      
+      
+cpHist <- ggplot()
+
+
+for(nc in seq(1,length(cpts),by = 2)){
+  
+  cp1 <- data.frame(age = all.cp[,nc])
+  cp2 <- data.frame(age = all.cp[,nc+1])
+  
+  
+  cpHist <- cpHist+geom_density(data = cp1,aes(x = age, fill = "Termination"), alpha = 0.5, colour = NA) +
   scale_x_reverse(name = "Age (yr BP)",limits = time.range[order(-time.range)] )+
   theme_bw()+scale_fill_brewer("Changepoint",palette = "Set1")+
   ylab("Probability Density")
 
 
 if(cp1.med!=cp2.med){#if they're not the same
-  cpHist <-  cpHist+geom_density(aes(x = cp2, fill = "Onset"), alpha = 0.5, colour = NA) +
-    geom_vline(aes(xintercept = cp2.med),color = "blue")
+  cpHist <-  cpHist+geom_density(data = cp2, aes(x = age, fill = "Onset"), alpha = 0.5, colour = NA) +
+    geom_vline(data = cp2, aes(xintercept = median(age)),color = "red")
 }
-cpHist <-  cpHist+  theme(legend.position = c(0.1, 0.7))+
-  geom_vline(aes(xintercept = cp1.med),color = "red")
+cpHist <-  cpHist+  
+  geom_vline(data = cp1, aes(xintercept = median(age)),color = "blue")
+
+if(i!=1){
+  cpHist <-  cpHist+  theme(legend.position = c(0.1, 0.7))
+}else{
+  cpHist <-  cpHist+  theme(legend.position = c(0.8, 0.7))
+}
+
+}
 
 p1 <- ggplot_gtable(ggplot_build(tsPlot))
 p2 <- ggplot_gtable(ggplot_build(cpHist))
 
-maxWidth = unit.pmax(p1$widths[2:3], p2$widths[2:3])
+maxWidth = grid::unit.pmax(p1$widths[2:3], p2$widths[2:3])
 p1$widths[2:3] <- maxWidth
 p2$widths[2:3] <- maxWidth
 finalFig <- grid.arrange(p1, p2, heights = c(3, 2))
