@@ -42,7 +42,7 @@ varNames = sapply(TS,"[[","paleoData_variableName")
 sapply(TS,"[[","tableType")
 
 
-vars2Analyze = c("Temp","temp2s","accumulation","d18O","seaIceCover","EpsilonC29-C23","Sun2011MAAT","C23d2H","C25d2H","C27d2H","C29d2H","AccRate","TTL CARB")
+vars2Analyze = c("Temp","temp","accumulation","d18O","seaIceCover","EpsilonC29-C23","Sun2011MAAT","C23d2H","C25d2H","C27d2H","C29d2H","AccRate","TTL CARB")
 sTS = TS[varNames %in% vars2Analyze]
 dsn = sapply(sTS,"[[","dataSetName")
 #Data ready to analyze!
@@ -92,7 +92,7 @@ if(length(cps)==3){#found two changepoints.
 }else if(length(cps)==4){
   cpts <- cps[1:2]
 }else if(length(cps)==5){
-  cpts <- cps[2:3]
+  cpts <- cps[1:4]
 }else if(length(cps)==2){
   cpts <- c(cps[1],cps[1])
 }else if(length(cps)==8){
@@ -139,10 +139,10 @@ for(nc in seq(1,length(cpts),by = 2)){
   ylab("Probability Density")
 
 
-if(cp1.med!=cp2.med){#if they're not the same
+#if(cp1.med!=cp2.med){#if they're not the same
   cpHist <-  cpHist+geom_density(data = cp2, aes(x = age, fill = "Onset"), alpha = 0.5, colour = NA) +
     geom_vline(data = cp2, aes(xintercept = median(age)),color = "red")
-}
+#}
 cpHist <-  cpHist+  
   geom_vline(data = cp1, aes(xintercept = median(age)),color = "blue")
 
@@ -160,7 +160,7 @@ p2 <- ggplot_gtable(ggplot_build(cpHist))
 maxWidth = grid::unit.pmax(p1$widths[2:3], p2$widths[2:3])
 p1$widths[2:3] <- maxWidth
 p2$widths[2:3] <- maxWidth
-finalFig <- grid.arrange(p1, p2, heights = c(3, 2))
+finalFig <- gridExtra::grid.arrange(p1, p2, heights = c(3, 2))
 
 ggsave(finalFig,filename = here("figures",paste0(dsn[i],"-",sTS[[i]]$paleoData_variableName,"-Timeseries&changepoints.pdf")))
 
