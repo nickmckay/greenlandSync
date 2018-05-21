@@ -42,7 +42,7 @@ varNames = sapply(TS,"[[","paleoData_variableName")
 sapply(TS,"[[","tableType")
 
 
-vars2Analyze = c("Temp","temp","accumulation","d18O","seaIceCover","EpsilonC29-C23","Sun2011MAAT","C23d2H","C25d2H","C27d2H","C29d2H","AccRate","TTL CARB")
+vars2Analyze = c("midges with optima <10 deg C","Temp","temp","accumulation","d18O","seaIceCover","EpsilonC29-C23","Russell MAAT MBT'5ME","C23d2H","C25d2H","C27d2H","C29d2H","AccRate","TTL CARB")
 
 
 sTS = TS[varNames %in% vars2Analyze]
@@ -69,19 +69,19 @@ vnames = sapply(sTS,"[[","paleoData_variableName")
 
 dsn
 #Specify number of change points for each record
-Q <- c(8,3,5,3,5,  3,3,3,3,4,  3,5,4,4,4,  3,3)
+Q <- c(3 , 8,3,5,3,5,  3,3,3,3,4,  3,5,4,4,4,  3,3)
 
 #meese    #andersen are problematic. Andersen is too short and Meese is missing the ensemble data. 
-pen = c(.1,.1,.1,.1,.1,  .1,.1,.1,.1,.1,   .01,.1,.1,.1,.1,.1,.1)
+pen = c(.1, .1,.1,.1,.1,.1,  .1,.1,.1,.1,.1,   .01,.1,.1,.1,.1,.1,.1)
 
 
 #cpt testing.
 time.range <- c(7000,9500)
-names(D)[8]
+names(D)[i]
 allDist = list()
 
 
-for(i in c(1:5,7,9:17)){
+for(i in c(1 ,1+c(1:5,7,9:17))){
   y = sTS[[i]]$paleoData_values
   if(grepl("epsilon",sTS[[i]]$paleoData_variableName,ignore.case = T)){
     y[y < -20] <- NA
